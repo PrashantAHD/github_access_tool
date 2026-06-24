@@ -106,7 +106,7 @@ def parse_repo_name(line: str, default_org: str) -> Optional[str]:
 
 
 def read_repositories(org: str) -> List[str]:
-    print("Enter repositories or GitHub URLs (one per line)")
+    print("Enter repositories or GitHub URLs (one per line, or comma/space-separated)")
     print("Press ENTER twice when done:")
 
     repos: List[str] = []
@@ -122,14 +122,24 @@ def read_repositories(org: str) -> List[str]:
             continue
         empty_count = 0
 
-        repo = parse_repo_name(line, org)
-        if not repo:
-            continue
-        if repo in seen:
-            continue
+        # Check if line contains comma-separated or space-separated repos
+        if "," in line or (" " in line and "/" not in line and "github" not in line.lower()):
+            # Split by comma if present, otherwise by space
+            separator = "," if "," in line else " "
+            items = [item.strip() for item in line.split(separator)]
+        else:
+            # Single repo (could be URL, org/repo, or bare name)
+            items = [line]
 
-        seen.add(repo)
-        repos.append(repo)
+        for item in items:
+            repo = parse_repo_name(item, org)
+            if not repo:
+                continue
+            if repo in seen:
+                continue
+
+            seen.add(repo)
+            repos.append(repo)
 
     return repos
 

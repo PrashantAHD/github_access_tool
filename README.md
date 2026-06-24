@@ -21,6 +21,26 @@ python github_access_tool.py
 
 If `GITHUB_TOKEN` is not set, the tool will securely prompt for it at runtime.
 
+## Repository Input
+
+Accept both formats when entering repositories:
+- **One per line** (press ENTER twice to finish):
+```
+> repo1
+> repo2
+> 
+```
+- **Comma-separated** on single line:
+```
+> repo1, repo2, repo3
+```
+- **Space-separated** on single line:
+```
+> repo1 repo2 repo3
+```
+
+Also supports full GitHub URLs and org/repo format automatically.
+
 ## Available Actions
 
 1. Add User to Team
