@@ -23,9 +23,11 @@ If `GITHUB_TOKEN` is not set, the tool will securely prompt for it at runtime.
 
 ## Available Actions
 
-1. Add Team Access to Repositories
-2. Remove Team Access from Repositories
-3. Add User to Team
-4. Remove User from Team
-5. Check Repository Permissions
-6. Exit
+1. Add User to Team
+2. Remove User from Team
+3. Add Team Access to Repositories
+4. Remove Team Access from Repositories
+5. Check Repository Permissions to a Team
+6. Grant Artifactory Actions Secrets to Repositories
+7. Enable Copilot Cloud Agent on Repositories
+8. Exit

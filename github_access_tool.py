@@ -22,6 +22,7 @@ from urllib import error, request
 
 BASE_API = "https://api.github.com"
 DEFAULT_ORG = "csx-technology"
+ARTIFACTORY_SECRET_NAMES = ("ARTIFACTORY_USERNAME", "ARTIFACTORY_PASSWORD")
 ALLOWED_PERMISSIONS = {"read", "write", "maintain", "admin", "triage", "pull", "push"}
 PERMISSION_NORMALIZATION = {
     "read": "pull",
@@ -221,14 +222,36 @@ class GitHubClient:
         active = [name for name, enabled in perms.items() if enabled]
         return True, f"Access exists. Permissions: {', '.join(active) if active else 'unknown'}"
 
+    def get_repo_id(self, repo: str) -> Tuple[bool, str, Optional[int]]:
+        ok, error, data = self._request("GET", f"/repos/{self.org}/{repo}")
+        if not ok:
+            return False, error, None
+        if not data or "id" not in data:
+            return False, "Repository ID not found.", None
+        return True, "", data["id"]
+
+    def add_org_secret_repo(self, secret_name: str, repo_id: int) -> Tuple[bool, str]:
+        return self._request(
+            "PUT",
+            f"/orgs/{self.org}/actions/secrets/{secret_name}/repositories/{repo_id}",
+        )[:2]
+
+    def enable_copilot_on_repo(self, repo_id: int) -> Tuple[bool, str]:
+        return self._request(
+            "PUT",
+            f"/orgs/{self.org}/copilot/selected_repositories/{repo_id}",
+        )[:2]
+
 
 MENU = (
-    "1. Add Team Access to Repositories",
-    "2. Remove Team Access from Repositories",
-    "3. Add User to Team",
-    "4. Remove User from Team",
-    "5. Check Repository Permissions",
-    "6. Exit",
+    "1. Add User to Team",
+    "2. Remove User from Team",
+    "3. Add Team Access to Repositories",
+    "4. Remove Team Access from Repositories",
+    "5. Check Repository Permissions to a Team",
+    "6. Grant Artifactory Actions Secrets to Repositories",
+    "7. Enable Copilot Cloud Agent on Repositories",
+    "8. Exit",
 )
 
 
@@ -281,8 +304,18 @@ def action_add_team_access(client: GitHubClient) -> None:
 
     if success_count == len(repos):
         print("Completed Successfully")
+        friendly = "read" if permission == "pull" else "write" if permission == "push" else permission
+        print(
+            f"Team {team_name} was granted {friendly} access to {success_count} "
+            f"repositor{'y' if success_count == 1 else 'ies'} successfully."
+        )
     else:
         print(f"Completed with issues ({success_count}/{len(repos)} succeeded)")
+        failed_count = len(repos) - success_count
+        print(
+            f"Team {team_name} was granted access to {success_count} repositories, "
+            f"and {failed_count} failed."
+        )
 
 
 def action_remove_team_access(client: GitHubClient) -> None:
@@ -311,8 +344,17 @@ def action_remove_team_access(client: GitHubClient) -> None:
 
     if success_count == len(repos):
         print("Completed Successfully")
+        print(
+            f"Team {team_name} access was removed from {success_count} "
+            f"repositor{'y' if success_count == 1 else 'ies'} successfully."
+        )
     else:
         print(f"Completed with issues ({success_count}/{len(repos)} succeeded)")
+        failed_count = len(repos) - success_count
+        print(
+            f"Team {team_name} access was removed from {success_count} repositories, "
+            f"and {failed_count} failed."
+        )
 
 
 def action_add_user_to_team(client: GitHubClient) -> None:
@@ -331,8 +373,10 @@ def action_add_user_to_team(client: GitHubClient) -> None:
     ok, error = client.add_user_to_team(team_slug, username)
     if ok:
         print("Completed Successfully")
+        print(f"User {username} was successfully added to team {team_name}.")
     else:
         print(f"Failed: {error}")
+        print(f"User {username} could not be added to team {team_name}.")
 
 
 def action_remove_user_from_team(client: GitHubClient) -> None:
@@ -351,8 +395,10 @@ def action_remove_user_from_team(client: GitHubClient) -> None:
     ok, error = client.remove_user_from_team(team_slug, username)
     if ok:
         print("Completed Successfully")
+        print(f"User {username} was successfully removed from team {team_name}.")
     else:
         print(f"Failed: {error}")
+        print(f"User {username} could not be removed from team {team_name}.")
 
 
 def action_check_repo_permissions(client: GitHubClient) -> None:
@@ -367,18 +413,132 @@ def action_check_repo_permissions(client: GitHubClient) -> None:
     section("Permission Check")
     print(f"Team: {team_name}")
 
+    success_count = 0
     for repo in repos:
         ok, msg = client.check_team_repo(team_slug, repo)
         symbol = "\u2713" if ok else "x"
         print(f"{symbol} {repo}: {msg}")
+        if ok:
+            success_count += 1
+
+    if success_count == len(repos):
+        print(f"Permission check completed successfully for all {len(repos)} repositories.")
+    else:
+        failed_count = len(repos) - success_count
+        print(
+            f"Permission check completed with issues: {success_count} succeeded, "
+            f"{failed_count} failed."
+        )
+
+
+def action_grant_artifactory_secrets(client: GitHubClient) -> None:
+    repos = read_repositories(client.org)
+
+    if not repos:
+        print("No repositories entered. Nothing to do.")
+        return
+
+    section("Summary")
+    print("Action: Grant Artifactory Actions secrets to repositories")
+    print("Secrets:")
+    for secret_name in ARTIFACTORY_SECRET_NAMES:
+        print(f"- {secret_name}")
+    print("Repositories:")
+    for repo in repos:
+        print(f"- {repo}")
+
+    if not ask_yes_no("Proceed? (y/n): "):
+        print("Operation canceled.")
+        return
+
+    print("Granting secrets access...")
+    success_count = 0
+    for repo in repos:
+        ok, error_message, repo_id = client.get_repo_id(repo)
+        if not ok or repo_id is None:
+            print(f"x {repo} ({error_message})")
+            continue
+
+        repo_ok = True
+        for secret_name in ARTIFACTORY_SECRET_NAMES:
+            ok, error_message = client.add_org_secret_repo(secret_name, repo_id)
+            if not ok:
+                print(f"x {repo} ({secret_name}: {error_message})")
+                repo_ok = False
+                break
+
+        if repo_ok:
+            print(f"\u2713 {repo}")
+            success_count += 1
+
+    if success_count == len(repos):
+        print("Completed Successfully")
+        print(
+            f"Artifactory GitHub Actions secrets were successfully granted to "
+            f"{success_count} repositor{'y' if success_count == 1 else 'ies'}."
+        )
+    else:
+        failed_count = len(repos) - success_count
+        print(f"Completed with issues ({success_count}/{len(repos)} succeeded)")
+        print(
+            f"Artifactory GitHub Actions secrets were granted to {success_count} repositories, "
+            f"and {failed_count} failed."
+        )
+
+
+def action_enable_copilot_on_repos(client: GitHubClient) -> None:
+    repos = read_repositories(client.org)
+
+    if not repos:
+        print("No repositories entered. Nothing to do.")
+        return
+
+    section("Summary")
+    print("Action: Enable Copilot Cloud Agent on repositories")
+    print("Repositories:")
+    for repo in repos:
+        print(f"- {repo}")
+
+    if not ask_yes_no("Proceed? (y/n): "):
+        print("Operation canceled.")
+        return
+
+    print("Enabling Copilot Cloud Agent...")
+    success_count = 0
+    for repo in repos:
+        ok, error_message, repo_id = client.get_repo_id(repo)
+        if not ok or repo_id is None:
+            print(f"x {repo} ({error_message})")
+            continue
+
+        ok, error_message = client.enable_copilot_on_repo(repo_id)
+        if ok:
+            print(f"\u2713 {repo}")
+            success_count += 1
+        else:
+            print(f"x {repo} ({error_message})")
+
+    if success_count == len(repos):
+        print("Completed Successfully")
+        print(
+            f"Copilot Cloud Agent was successfully enabled on {success_count} "
+            f"repositor{'y' if success_count == 1 else 'ies'}."
+        )
+    else:
+        failed_count = len(repos) - success_count
+        print(f"Completed with issues ({success_count}/{len(repos)} succeeded)")
+        print(
+            f"Copilot Cloud Agent was enabled on {success_count} repositories, "
+            f"and {failed_count} failed."
+        )
 
 
 def choose_option() -> str:
     while True:
         value = input("Select Option: ").strip()
-        if value in {"1", "2", "3", "4", "5", "6"}:
+        if value in {"1", "2", "3", "4", "5", "6", "7", "8"}:
             return value
-        print("Please choose a valid option (1-6).")
+        print("Please choose a valid option (1-8).")
 
 
 def get_runtime_config() -> Tuple[str, str]:
@@ -405,25 +565,30 @@ def main() -> int:
         return 1
 
     client = GitHubClient(token, org)
+    print()
+    print_menu()
+    option = choose_option()
 
-    while True:
-        print()
-        print_menu()
-        option = choose_option()
+    if option == "1":
+        action_add_user_to_team(client)
+    elif option == "2":
+        action_remove_user_from_team(client)
+    elif option == "3":
+        action_add_team_access(client)
+    elif option == "4":
+        action_remove_team_access(client)
+    elif option == "5":
+        action_check_repo_permissions(client)
+    elif option == "6":
+        action_grant_artifactory_secrets(client)
+    elif option == "7":
+        action_enable_copilot_on_repos(client)
+    else:
+        print("Goodbye.")
+        return 0
 
-        if option == "1":
-            action_add_team_access(client)
-        elif option == "2":
-            action_remove_team_access(client)
-        elif option == "3":
-            action_add_user_to_team(client)
-        elif option == "4":
-            action_remove_user_from_team(client)
-        elif option == "5":
-            action_check_repo_permissions(client)
-        else:
-            print("Goodbye.")
-            return 0
+    print("Goodbye.")
+    return 0
 
 
 if __name__ == "__main__":
