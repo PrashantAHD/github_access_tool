@@ -18,8 +18,6 @@ python -m py_compile .\github_access_tool.py
 
 - Describe the problem and solution.
 - Include sample terminal output for CLI behavior changes.
-- Link related ticket/work item if available.
-- Ensure CI checks pass.
 
 ## Security
 

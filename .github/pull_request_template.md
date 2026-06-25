@@ -12,4 +12,3 @@ Describe what changed and why.
 
 - [ ] Documentation updated (if behavior changed)
 - [ ] Backward-compatible prompts and outputs considered
-- [ ] Related ticket/work item linked
