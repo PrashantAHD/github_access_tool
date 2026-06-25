@@ -1,6 +1,16 @@
 # github_access_tool
 
-Single-file Python terminal tool for automating GitHub team/repository access from VS Code terminal.
+Single-file Python terminal tool for automating GitHub organization access operations.
+
+This tool helps reduce manual admin work by handling common GitHub tasks in one interactive flow:
+
+- Add or remove users from teams
+- Grant or remove team access to repositories
+- Check team permissions on repositories
+- Grant Artifactory GitHub Actions secrets access to repositories
+- Enable Copilot Cloud Agent access for repositories
+
+Designed for quick bulk operations with confirmation prompts, clear per-repo results, and consistent terminal-first usage.
 
 Requirements: Python 3.8+ (no third-party packages required).
 
