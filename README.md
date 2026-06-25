@@ -133,3 +133,77 @@ Also supports full GitHub URLs and org/repo format automatically.
 6. Grant Artifactory Actions Secrets to Repositories
 7. Enable Copilot Cloud Agent on Repositories
 8. Exit
+
+## How It Works
+
+The tool uses a modular architecture with a single entry point and reusable components:
+
+### Main Components
+
+**GitHubClient Class**
+- Wraps the GitHub REST API v2022-11-28
+- Handles all API communication with Bearer token authentication
+- Uses Python's built-in `urllib` for HTTPS requests (no external dependencies)
+- 30-second timeout on all requests
+- Key methods:
+  - `add_team_repo()` / `remove_team_repo()` — Manage team-to-repo access
+  - `add_user_to_team()` / `remove_user_from_team()` — Manage team membership
+  - `check_team_repo()` — Verify team permissions
+  - `add_org_secret_repo()` — Grant Artifactory secrets access
+  - `enable_copilot_on_repo()` — Enable Copilot Cloud Agent
+  - `get_repo_id()` — Resolve repo name to GitHub ID
+
+**Input Processing**
+- `parse_repo_name()` — Converts URLs (https/ssh), org/repo format, or bare names to `owner/repo`
+- `read_repositories()` — Accepts repositories in any format (one-per-line, comma-separated, space-separated)
+
+**Action Dispatchers** (8 functions)
+- `action_add_user_to_team()` — Prompts for user and team, adds membership
+- `action_remove_user_from_team()` — Removes user from team
+- `action_add_team_access()` — Grants team access to repositories
+- `action_remove_team_access()` — Revokes team access from repositories
+- `action_check_permissions()` — Displays team access level per repository
+- `action_grant_secrets()` — Grants Artifactory Actions secrets to repositories
+- `action_enable_copilot()` — Enables Copilot Cloud Agent on repositories
+- Each function tracks per-repo results and displays context-specific completion messages
+
+### Execution Flow
+
+```
+1. Start Tool
+   ↓
+2. Read GitHub Token
+   (from GITHUB_TOKEN env var or prompt)
+   ↓
+3. Read Organization Name
+   (from GITHUB_ORG env var or prompt, default: csx-technology)
+   ↓
+4. Display Menu (Actions 1-8)
+   ↓
+5. User Selects Action
+   ↓
+6. Dispatcher Function
+   - Prompts for required inputs (users, teams, repos)
+   - Parses repository names
+   - Calls GitHubClient methods for each repo
+   - Collects success/failure results
+   ↓
+7. Display Results
+   (action-specific completion message)
+   ↓
+8. Exit
+```
+
+### Token Scope Requirements
+
+The GitHub Personal Access Token must have these scopes:
+- `admin:org` — Manage organization teams and members
+- `repo` — Access repositories, manage secrets
+
+### Authentication
+
+Token is sourced from (in order):
+1. `GITHUB_TOKEN` environment variable
+2. Runtime prompt (masked input via `getpass`)
+
+The token is never stored or logged; it's used only for the current session.
