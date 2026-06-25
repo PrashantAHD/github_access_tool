@@ -14,15 +14,6 @@ Designed for quick bulk operations with confirmation prompts, clear per-repo res
 
 Requirements: Python 3.8+ (no third-party packages required).
 
-## Governance and Compliance
-
-- CODEOWNERS for review ownership in [.github/CODEOWNERS](.github/CODEOWNERS)
-- PR template in [.github/pull_request_template.md](.github/pull_request_template.md)
-- CI compile validation in [.github/workflows/ci.yml](.github/workflows/ci.yml)
-- Dependabot for GitHub Actions updates in [.github/dependabot.yml](.github/dependabot.yml)
-- Security policy in [SECURITY.md](SECURITY.md)
-- Contribution guide in [CONTRIBUTING.md](CONTRIBUTING.md)
-
 ## Run
 
 1. Set environment variables (PowerShell):
