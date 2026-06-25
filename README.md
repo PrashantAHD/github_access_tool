@@ -14,6 +14,51 @@ Designed for quick bulk operations with confirmation prompts, clear per-repo res
 
 Requirements: Python 3.8+ (no third-party packages required).
 
+## How It Works
+
+The tool follows a modular execution flow:
+
+### Execution Flow
+
+```
+1. Start Tool
+   ↓
+2. Read GitHub Token
+   (from GITHUB_TOKEN env var or prompt)
+   ↓
+3. Read Organization Name
+   (from GITHUB_ORG env var or prompt)
+   ↓
+4. Display Menu (Actions 1-8)
+   ↓
+5. User Selects Action
+   ↓
+6. Dispatcher Function
+   - Prompts for required inputs (users, teams, repos)
+   - Parses repository names
+   - Calls GitHubClient methods for each repo
+   - Collects success/failure results
+   ↓
+7. Display Results
+   (action-specific completion message)
+   ↓
+8. Exit
+```
+
+### Token Scope Requirements
+
+The GitHub Personal Access Token must have these scopes:
+- `admin:org` — Manage organization teams and members
+- `repo` — Access repositories, manage secrets
+
+### Authentication
+
+Token is sourced from (in order):
+1. `GITHUB_TOKEN` environment variable
+2. Runtime prompt (masked input via `getpass`)
+
+The token is never stored or logged; it's used only for the current session.
+
 ## Getting Started
 
 ### Step 1: Install Git (if not already installed)
@@ -133,48 +178,3 @@ Also supports full GitHub URLs and org/repo format automatically.
 6. Grant Artifactory Actions Secrets to Repositories
 7. Enable Copilot Cloud Agent on Repositories
 8. Exit
-
-## How It Works
-
-The tool follows a modular execution flow:
-
-### Execution Flow
-
-```
-1. Start Tool
-   ↓
-2. Read GitHub Token
-   (from GITHUB_TOKEN env var or prompt)
-   ↓
-3. Read Organization Name
-   (from GITHUB_ORG env var or prompt)
-   ↓
-4. Display Menu (Actions 1-8)
-   ↓
-5. User Selects Action
-   ↓
-6. Dispatcher Function
-   - Prompts for required inputs (users, teams, repos)
-   - Parses repository names
-   - Calls GitHubClient methods for each repo
-   - Collects success/failure results
-   ↓
-7. Display Results
-   (action-specific completion message)
-   ↓
-8. Exit
-```
-
-### Token Scope Requirements
-
-The GitHub Personal Access Token must have these scopes:
-- `admin:org` — Manage organization teams and members
-- `repo` — Access repositories, manage secrets
-
-### Authentication
-
-Token is sourced from (in order):
-1. `GITHUB_TOKEN` environment variable
-2. Runtime prompt (masked input via `getpass`)
-
-The token is never stored or logged; it's used only for the current session.
