@@ -14,22 +14,94 @@ Designed for quick bulk operations with confirmation prompts, clear per-repo res
 
 Requirements: Python 3.8+ (no third-party packages required).
 
-## Run
+## Getting Started
 
-1. Set environment variables (PowerShell):
+### Step 1: Install Git (if not already installed)
+
+Open PowerShell and run:
 
 ```powershell
-$env:GITHUB_TOKEN="<your_github_token>"
+winget install --id Git.Git -e --source winget
+```
+
+Once complete, close PowerShell and open a new one to apply changes.
+
+Verify installation:
+
+```powershell
+git --version
+```
+
+### Step 2: Install Python (if not already installed)
+
+Open PowerShell and run:
+
+```powershell
+winget install --id Python.Python.3.12 -e --source winget
+```
+
+Close PowerShell and open a new one.
+
+Verify installation:
+
+```powershell
+python --version
+```
+
+If `python` is not recognized, try:
+
+```powershell
+py --version
+```
+
+### Step 3: Clone the Repository
+
+Navigate to your desired folder and clone:
+
+```powershell
+cd C:\Users\YourUsername
+git clone https://github.com/PrashantAHD/github_access_tool.git
+cd .\github_access_tool
+```
+
+### Step 4: Set Up GitHub Authentication
+
+#### Option A: Set environment variables (per session)
+
+```powershell
+$env:GITHUB_TOKEN="your_github_personal_access_token"
 $env:GITHUB_ORG="csx-technology"
 ```
 
-2. Start the tool:
+To create a GitHub Personal Access Token (PAT):
+1. Go to https://github.com/settings/tokens
+2. Click "Generate new token (classic)"
+3. Select scopes: `admin:org` and `repo`
+4. Copy the generated token and paste into the command above
+
+#### Option B: Prompt for token at runtime (no env vars)
+
+Simply run the tool; it will securely prompt for your token:
 
 ```powershell
-python github_access_tool.py
+python .\github_access_tool.py
 ```
 
-If `GITHUB_TOKEN` is not set, the tool will securely prompt for it at runtime.
+### Step 5: Run the Tool
+
+From the repo folder:
+
+```powershell
+python .\github_access_tool.py
+```
+
+Or with environment variables pre-set:
+
+```powershell
+$env:GITHUB_TOKEN="your_token"; $env:GITHUB_ORG="csx-technology"; python .\github_access_tool.py
+```
+
+Select an option (1-8) from the menu and follow the interactive prompts.
 
 ## Repository Input
 
